@@ -9,7 +9,6 @@ import os, sys, math, argparse, os.path
 # -i: provide input file name
 # -n: provide integer for distribution frequency and n-graph
 #
-#
 # Example Usage:
 #
 # -i encrypted.txt -n 1
@@ -88,13 +87,10 @@ def parse_args():
     parser = argparse.ArgumentParser(description='Encrypt/Decrypt a file')
     parser.add_argument("-i", "--input_file_name", type=str, required=True, dest="input_v",
                         help = 'Please enter an input file name ')
-    # parser.add_argument("-fd", "--output_file_name", type=str, required=False, dest="output_v",
-    #                     default="", help='Please enter an output file name '
-    #                                      '(if you would like the output to be'
-    #                                      'in the input file, leave this blank)')
     parser.add_argument("-n", "--distribution selection", type=int, required=True, dest="choice_v",
                         help='Please enter an integer choice to specify the n-gram you'
-                             ' would like to print out (must be greater than 0)')
+                             ' would like to print out (must be greater than 0 and less'
+                             ' than 20)')
     args = parser.parse_args()
     print(args)
     return args
@@ -102,14 +98,38 @@ def parse_args():
 
 def check_args(choice, input_file_name):
     """checks argument validity"""
-    if choice < 1:
-        print("error, please pick an integer choice greater than 0")
+    if choice < 1 or choice > 20:
+        print("error, please pick an integer choice greater than 0 and less than 21")
         exit()
 
     if not os.path.isfile(input_file_name):
         print("error, please input a valid file name (file might "
               "not be in this directory)")
         exit()
+
+def check_caesar(content):
+    """ takes in plain text that is longer than 25 chars, english alphabet, and spaces.
+        this function prints out all possibilities of a caesar-cipher and its
+        corresponding amount of shifts.
+    """
+    content = content[0:25]
+    content.lower()
+    alpha_count = 26
+
+    count = 0
+    while count < alpha_count:
+        data = ""
+        for i in content:
+            if (chr(ord(i)) == ' '):
+                data += ' '
+            else:
+                if ord(i) == 122:
+                    data += 'a'
+                else:
+                    data += (chr(ord(i) + 1))
+        content = data
+        print(data + "   -", count, "shifts up")
+        count += 1
 
 
 def print_n_graph(input_file, n):
@@ -136,6 +156,11 @@ def print_n_graph(input_file, n):
 
     for key, value in temp.items():
         print(key + ": ",  value)
+    print()
+    print()
+    print()
+    print("brute force caesar cipher check:")
+    check_caesar(text)
 
 
 def main():
