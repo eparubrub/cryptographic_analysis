@@ -1,4 +1,4 @@
-import os, sys, math, argparse, os.path
+import os, sys, argparse, os.path, operator
 
 # cipher.py
 #
@@ -29,6 +29,15 @@ def read_input(input_file_name):
         return input_file_content
 
 
+def write_output(output_file_name, output_content):
+    """ write the output file based on output name provided and
+        output information
+    """
+    output_file = open(output_file_name, 'w')
+    output_file.write(output_content)
+    output_file.close()
+    return 0
+
 
 class Distribution(object):
     """ Base class for analysis routines for symbol distributions.
@@ -43,11 +52,48 @@ class Distribution(object):
         return ''.join(pp)
 
 
+def print_dict(dict):
+    """ prints a dictionary"""
+    for key, val in dict.items():
+        print(key, ":", val)
+
+
+def match_poly(dict):
+    """ returns a dictionary with values that represent the highest
+        frequency to lowest frequency alphabets in the english language
+        (key of letter frequency is based upon Pavel Mička's website,
+        which cites Robert Lewand's Cryptological Mathematics found on
+        wikipedia under "letter frequency)
+    """
+    FD_english = 'etaoinshrdlcumwfgypbvkjxqz'
+    count = 0
+    return_dict = {}
+    for key in dict:
+        if count == 26:
+            count = 0
+
+        if key == ' ':
+            return_dict.update({key: ' '})
+        else:
+            return_dict.update({key: FD_english[count]})
+            count += 1
+    return return_dict
+
+
+def replace_text(content, dict):
+    """ Takes current dictionary and returns a decrypted
+        text.
+    """
+    for i, j in dict.items():
+        content = content.replace(i, j)
+    return content
+
+
 class Ngraph(Distribution):
     """ Looking 'n' symbols at a time, create a dictionary
         of the occurrences of the n-ary string of symbols.
         Default is n=1, a monograph.
-        - class copied from Paul A. Lambert
+        - class mostly taken from Paul A. Lambert
     """
     def __init__(self, n=1 ):
         self.n = n
@@ -61,7 +107,11 @@ class Ngraph(Distribution):
                 self.result[nary] += 1
             else:
                 self.result[nary] = 1
-        return self.result
+        sorted_d = sorted(self.result.items(), key=operator.itemgetter(1), reverse=True)
+        return_d = {}
+        for key, val in sorted_d:
+            return_d.update({key: val})
+        return return_d #returns a sorted dictionary
 
 
 class n_graph(Distribution, int):
@@ -83,7 +133,7 @@ def write_output(output_file_name, output_content):
 
 
 def parse_args():
-    """setsup the argument parser then return correct arguments"""
+    """sets up the argument parser then return correct arguments"""
     parser = argparse.ArgumentParser(description='Encrypt/Decrypt a file')
     parser.add_argument("-i", "--input_file_name", type=str, required=True, dest="input_v",
                         help = 'Please enter an input file name ')
@@ -114,7 +164,7 @@ def check_caesar(content):
     """
     content = content[0:25]
     content.lower()
-    alpha_count = 26
+    alpha_count = 27 #including spaces
 
     count = 0
     while count < alpha_count:
@@ -133,34 +183,38 @@ def check_caesar(content):
 
 
 def print_n_graph(input_file, n):
-    """Prints distribution frequency and n-graph.
-       Distribution frequency is calculated by
-       dividing the values by the amount of characters
-       total.
+    """ Prints distribution frequency, n-graph, a brute force cipher check,
+        and a poly-alphabetic representation of a guess key. Distribution
+        frequency is calculated by dividing the values by the amount of
+        characters total. N-graph is calculated by taking the amount
+        requested for distribution. The brute force cipher check is calculated
+        by shifting the alphabet up by one each time. The poly-alphabetic
+        representation represents the highest frequency in the sample text
+        compared to the highest frequency letters in the English Alphabet.
+        Also outputs the poly-alphabetic decrypted text in a file called
+        "output.txt"
     """
     D = dist_dict['ng']
     dist = D(n)
     text = read_input(input_file)
 
     temp = dist.analyze(text)
+    print("\n\n", n, "- gram distribution:")
+    print_dict(temp)
+    print("\n\n Distribution Frequency: ")
 
-    print()
-    print(n, "- gram distribution:")
-    print(dist.to_readable())
-    print()
-    print()
-    print("Distribution Frequency: ")
+    DF_dict = {}
+    for key, val in temp.items():
+        DF_dict.update({key:val/text.__len__()})
 
-    for i in temp:
-        temp[i] = temp[i]/text.__len__()
-
-    for key, value in temp.items():
-        print(key + ": ",  value)
-    print()
-    print()
-    print()
-    print("brute force caesar cipher check:")
+    print_dict(DF_dict)
+    print("\n\n brute force caesar cipher check:")
     check_caesar(text)
+    print("\n\n poly-alphabetic test: ")
+    poly_alph = match_poly(DF_dict)
+    print_dict(poly_alph)
+    output_text = replace_text(text, poly_alph)
+    write_output('output.txt', output_text)
 
 
 def main():
